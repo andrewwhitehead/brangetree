@@ -3,18 +3,19 @@ import math
 
 
 class Marker:
-    def __init__(self, name):
+    def __init__(self, name, hash):
         self.name = name
+        self.hash = hash
 
     def __repr__(self):
         return self.name
 
     def to_bytes(self, *args):
-        return self.name.encode("ascii")
+        return self.hash
 
 
-B = Marker("B")
-E = Marker("E")
+B = Marker("B", (0).to_bytes(4, "big"))
+E = Marker("E", (pow(2, 32) - 1).to_bytes(4, "big"))
 
 
 def gen_leaves(bits, fill=False):
@@ -42,16 +43,14 @@ def gen_leaves(bits, fill=False):
 
 
 def branch_hash(a, b):
-    h = hashlib.sha256(b"1")
-    h.update(a)
+    h = hashlib.sha256(a)
     h.update(b)
     return h.digest()
 
 
 def leaf_hash(a, b):
-    h = hashlib.sha256(b"0")
-    h.update(a.to_bytes(8, "little"))
-    h.update(b.to_bytes(8, "little"))
+    h = hashlib.sha256(a.to_bytes(4, "big"))
+    h.update(b.to_bytes(4, "big"))
     return h.digest()
 
 
