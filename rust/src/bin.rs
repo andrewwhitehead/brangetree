@@ -221,68 +221,105 @@ fn make_range(left: u32, right: u32) -> [u8; 8] {
     range
 }
 
+struct RangeParse {
+    pub left: u32,
+    pub in_rev: bool,
+    pub bit_idx: u32,
+}
+
+impl RangeParse {
+    pub fn new() -> Self {
+        Self {
+            left: 0,
+            in_rev: false,
+            bit_idx: 0,
+        }
+    }
+
+    pub fn process_bits(&mut self, revoked: bool, count: u32) -> Option<[u8; 8]> {
+        let mut range: Option<[u8; 8]> = None;
+        if revoked {
+            if !self.in_rev {
+                range.replace(make_range(self.left, self.bit_idx));
+                self.in_rev = true;
+            }
+            self.left = self.bit_idx;
+        } else {
+            self.in_rev = false;
+        }
+        self.bit_idx += count;
+        range
+    }
+
+    pub fn end(&self) -> [u8; 8] {
+        make_range(self.left, u32::MAX)
+    }
+
+    pub fn fill(&self) -> [u8; 8] {
+        make_range(u32::MAX, u32::MAX)
+    }
+}
+
 fn main() -> std::io::Result<()> {
     let paths: Vec<String> = natural_sort(env::args().skip(1));
-    let bits = std::mem::size_of::<T>() * 8;
+    let bits = (std::mem::size_of::<T>() * 8) as u32;
     for path in paths {
         let start = Instant::now();
-        let mut left: u32 = 0;
-        let mut in_rev: bool = false;
-        let mut bit_idx: u32 = 0;
-        let mut leaf_idx: u32 = 0;
+        let mut folder = TreeFolder::<RangeHash<Sha256>>::new();
 
-        let mut folder = fold_zipped_blocks(
-            path.clone(),
-            TreeFolder::<RangeHash<Sha256>>::new(),
-            |mut folder, block| {
-                // FIXME check uneven block length (mod 8)
-                let mut size = block.len();
-                let remain_size = size % 8;
-                size -= remain_size;
+        let parsed = fold_zipped_blocks(path.clone(), RangeParse::new(), |mut proc, block| {
+            let mut size = block.len();
+            let remain_size = size % 8;
+            size -= remain_size;
 
-                let elts = block[..size].as_slice_of::<T>().unwrap();
-                for elt in elts {
-                    let elt = if cfg!(target_endian = "little") {
-                        elt.swap_bytes()
-                    } else {
-                        *elt
-                    };
+            let elts = block[..size].as_slice_of::<T>().unwrap();
+            for elt in elts {
+                let elt = if cfg!(target_endian = "little") {
+                    elt.swap_bytes()
+                } else {
+                    *elt
+                };
 
-                    for idx in (0..bits).rev() {
-                        let revoked = elt >> idx & 1 != 0;
-                        if revoked {
-                            if !in_rev {
-                                // FIXME - convert error
-                                folder.push(make_range(left, bit_idx)).unwrap();
-                                leaf_idx += 1;
-                                in_rev = true;
-                            }
-                            left = bit_idx;
-                        } else {
-                            in_rev = false;
-                        }
-                        bit_idx += 1;
+                if elt == 0 || elt == u64::MAX {
+                    if let Some(range) = proc.process_bits(elt != 0, bits) {
+                        // FIXME - convert error
+                        folder.push(range).unwrap();
+                    }
+                    continue;
+                }
+
+                for idx in (0..bits).rev() {
+                    if let Some(range) = proc.process_bits(elt >> idx & 1 != 0, 1) {
+                        // FIXME - convert error
+                        folder.push(range).unwrap();
                     }
                 }
-                if remain_size > 0 {
-                    //println!("remain {}", remain_size);
+            }
+            if remain_size > 0 {
+                for elt in &block[size..] {
+                    for idx in (0..8).rev() {
+                        if let Some(range) = proc.process_bits(elt >> idx & 1 != 0, 1) {
+                            // FIXME - convert error
+                            folder.push(range).unwrap();
+                        }
+                    }
                 }
+            }
 
-                std::io::Result::Ok(folder)
-            },
-        )?;
+            std::io::Result::Ok(proc)
+        })?;
 
         // FIXME convert error
-        folder.push(make_range(left, u32::MAX)).unwrap();
-        leaf_idx += 1;
-        folder.fill(make_range(u32::MAX, u32::MAX)).unwrap();
+        folder.push(parsed.end()).unwrap();
+        let leaf_idx = folder.len();
+        folder.fill(parsed.fill()).unwrap();
         let leaf_filled_idx = folder.len();
         let result = folder.result().unwrap();
         let dur = Instant::now() - start;
 
         if let Some(root) = result {
             println!(
-                "{} {} {} {} {}",
+                "{} {} {} {} {:0.3}",
                 path,
                 leaf_filled_idx,
                 leaf_idx,
