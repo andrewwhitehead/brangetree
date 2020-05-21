@@ -19,10 +19,12 @@ pub fn hash_zipped<H: Digest>(path: String, fill: bool) -> Result<HashResult, Er
     let target = RangeHash::<H>::new();
     let mut parsed = process_zipped_bits(path, RangeParser::new(target))?;
     let leaf_count = parsed.len();
-    if fill {
+    let filled_count = if fill {
         parsed.fill();
-    }
-    let filled_count = parsed.len();
+        parsed.len()
+    } else {
+        leaf_count
+    };
     let root = parsed.result();
     Ok(HashResult {
         leaf_count,

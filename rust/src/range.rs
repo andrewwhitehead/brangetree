@@ -4,7 +4,7 @@ use crate::input::BitSink;
 use crate::tree::TreeFolder;
 
 #[inline]
-fn make_range(left: u32, right: u32) -> [u8; 8] {
+pub fn make_range(left: u32, right: u32) -> [u8; 8] {
     let mut range = (right as u64).to_be_bytes();
     range[0..4].copy_from_slice(&left.to_be_bytes());
     range

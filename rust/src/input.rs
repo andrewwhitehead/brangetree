@@ -8,9 +8,9 @@ use byte_slice_cast::*;
 use crate::error::Error;
 
 // could change to u32 depending on platform
-type BitBlock = u64;
+pub type BitBlock = u64;
 
-struct ReadIter<R: Read> {
+pub struct ReadIter<R: Read> {
     buf: Vec<u8>,
     source: R,
 }
@@ -41,7 +41,7 @@ impl<'a, R: Read> ReadIter<R> {
     }
 }
 
-fn fold_zipped_blocks<B, F, E>(path: String, init: B, f: F) -> Result<B, E>
+pub fn fold_zipped_blocks<B, F, E>(path: String, init: B, f: F) -> Result<B, E>
 where
     F: FnMut(B, &[u8]) -> Result<B, E>,
     E: From<std::io::Error>,
