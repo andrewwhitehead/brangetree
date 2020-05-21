@@ -61,7 +61,7 @@ impl<T: RangeTarget> RangeParser<T> {
         Self {
             left: 0,
             in_rev: false,
-            bit_idx: 0,
+            bit_idx: 1,
             target,
         }
     }
@@ -90,5 +90,40 @@ where
     fn complete(mut self) -> Result<Self::Result, Error> {
         self.target.push_range(self.left, u32::MAX)?;
         Ok(self.target)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    struct RangeCollect {
+        result: Vec<(u32, u32)>,
+    }
+
+    impl RangeCollect {
+        pub fn new() -> Self {
+            Self { result: vec![] }
+        }
+    }
+
+    impl RangeTarget for RangeCollect {
+        type Error = std::convert::Infallible;
+
+        fn push_range(&mut self, left: u32, right: u32) -> Result<(), Self::Error> {
+            self.result.push((left, right));
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test_range() {
+        let bits = &[true, false, false, true];
+        let mut parser = RangeParser::new(RangeCollect::new());
+        for bit in bits {
+            parser.process_bits(*bit, 1).unwrap();
+        }
+        let collect = parser.complete().unwrap();
+        assert_eq!(collect.result, vec![(0, 1), (1, 4), (4, u32::MAX)]);
     }
 }
