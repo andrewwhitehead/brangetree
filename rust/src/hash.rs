@@ -25,3 +25,22 @@ impl<H: Digest, B: AsRef<[u8]>> TreeFold for HashFold<H, B> {
         Ok(h.result().to_vec())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::tree::TreeFolder;
+
+    #[test]
+    fn test_hash() {
+        let leaves: Vec<[u8; 8]> = [0, 1].iter().map(|n| (*n as u64).to_be_bytes()).collect();
+        let result = TreeFolder::<HashFold<Sha256, [u8; 8]>>::fold(leaves.clone(), None);
+        let h0 = Sha256::digest(&leaves[0]).to_vec();
+        let h1 = Sha256::digest(&leaves[1]).to_vec();
+        let mut hasher = Sha256::new();
+        hasher.input(h0);
+        hasher.input(h1);
+        let root = hasher.result().to_vec();
+        assert_eq!(result.unwrap().unwrap(), root);
+    }
+}
