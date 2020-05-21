@@ -25,8 +25,8 @@ fn main() -> Result<(), Error> {
             println!(
                 "{} {} {} {} {:0.3}",
                 path,
-                result.leaf_filled_idx,
-                result.leaf_idx,
+                result.filled_count,
+                result.leaf_count,
                 hex::encode(root),
                 dur.as_secs_f64()
             );
