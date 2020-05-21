@@ -42,6 +42,9 @@ sets = [
     (28, 90),
 ]
 
+if not os.path.isdir('data'):
+    os.mkdir('data')
+
 for (index_bits, fill_perc) in sets:
     size = pow(2, index_bits)
 
