@@ -22,7 +22,8 @@ def gen_leaves(bits, fill=False):
     left = B
     rev_start = None
     leaf_idx = 0
-    for idx, revoked in enumerate(bits):
+    idx = 1
+    for revoked in bits:
         if revoked:
             if rev_start is None:
                 yield (left, idx)
@@ -31,6 +32,7 @@ def gen_leaves(bits, fill=False):
             left = idx
         else:
             rev_start = None
+        idx += 1
     yield (left, E)
     leaf_idx += 1
 

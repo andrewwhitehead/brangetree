@@ -42,6 +42,7 @@ if __name__ == "__main__":
             print(
                 filename,
                 fsize,
+                result["root"].hex(),
                 result["leaf_count_filled"],
                 result["leaf_count"],
                 round(time.perf_counter() - start, 3),
