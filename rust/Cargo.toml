@@ -21,4 +21,8 @@ thiserror = "1.0.9"
 
 [[bin]]
 name = "brt-hash"
-path = "src/bin.rs"
+path = "src/bin/brt-hash.rs"
+
+[[bin]]
+name = "brt-find"
+path = "src/bin/brt-find.rs"

@@ -1,7 +1,8 @@
 use crate::error::Error;
 use crate::hash::{Digest, HashFold};
 use crate::input::BitSink;
-use crate::tree::TreeFolder;
+use crate::path::{Path, PathTracker};
+use crate::tree::{TreeFold, TreeFolder};
 
 #[inline]
 pub fn make_range(left: u32, right: u32) -> [u8; 8] {
@@ -10,20 +11,28 @@ pub fn make_range(left: u32, right: u32) -> [u8; 8] {
     range
 }
 
+pub fn range_hasher<H: Digest>() -> RangeTreeFolder<HashFold<H, [u8; 8]>> {
+    RangeTreeFolder::new(HashFold::<H, [u8; 8]>::new())
+}
+
+pub fn range_path_hasher<H: Digest>(find_index: u32) -> RangePathTracker<HashFold<H, [u8; 8]>> {
+    RangePathTracker::new(HashFold::<H, [u8; 8]>::new(), find_index)
+}
+
 pub trait RangeTarget {
-    type Error: std::error::Error;
+    type Error;
 
     fn push_range(&mut self, left: u32, right: u32) -> Result<(), Self::Error>;
 }
 
-pub struct RangeHash<H: Digest> {
-    pub folder: TreeFolder<HashFold<H, [u8; 8]>>,
+pub struct RangeTreeFolder<F: TreeFold<Leaf = [u8; 8]>> {
+    pub folder: TreeFolder<F>,
 }
 
-impl<H: Digest> RangeHash<H> {
-    pub fn new() -> Self {
+impl<T: TreeFold<Leaf = [u8; 8]>> RangeTreeFolder<T> {
+    pub fn new(base: T) -> Self {
         Self {
-            folder: TreeFolder::<HashFold<H, [u8; 8]>>::new(),
+            folder: TreeFolder::new(base),
         }
     }
 
@@ -35,17 +44,76 @@ impl<H: Digest> RangeHash<H> {
         self.folder.len()
     }
 
-    pub fn result(self) -> Option<Vec<u8>> {
+    pub fn result(self) -> Option<T::Target> {
+        let (result, _) = self.folder.result().unwrap();
+        result
+    }
+
+    pub fn complete(self) -> (Option<T::Target>, T) {
         self.folder.result().unwrap()
+    }
+
+    pub fn update_base<F>(&mut self, f: F)
+    where
+        F: FnOnce(&mut T),
+    {
+        self.folder.update_base(f)
     }
 }
 
-impl<H: Digest> RangeTarget for RangeHash<H> {
-    type Error = std::convert::Infallible;
+impl<F: TreeFold<Leaf = [u8; 8]>> RangeTarget for RangeTreeFolder<F> {
+    type Error = F::Error;
 
     fn push_range(&mut self, left: u32, right: u32) -> Result<(), Self::Error> {
         let range = make_range(left, right);
         self.folder.push(&range)
+    }
+}
+
+pub struct RangePathTracker<T: TreeFold<Leaf = [u8; 8]>> {
+    folder: RangeTreeFolder<PathTracker<T>>,
+    find_index: u32,
+    range: Option<(u32, u32)>,
+}
+
+impl<T: TreeFold<Leaf = [u8; 8]>> RangePathTracker<T> {
+    pub fn new(base: T, find_index: u32) -> Self {
+        Self {
+            folder: RangeTreeFolder::new(PathTracker::new(base, None)),
+            find_index,
+            range: None,
+        }
+    }
+
+    pub fn fill(&mut self) -> usize {
+        self.folder.fill()
+    }
+
+    pub fn len(&self) -> usize {
+        self.folder.len()
+    }
+
+    pub fn result(
+        self,
+    ) -> (
+        Option<(u32, u32)>,
+        Option<Path<T::Target>>,
+        Option<T::Target>,
+    ) {
+        let (result, tracker) = self.folder.complete();
+        (self.range, tracker.path_result(), result)
+    }
+}
+
+impl<F: TreeFold<Leaf = [u8; 8]>> RangeTarget for RangePathTracker<F> {
+    type Error = F::Error;
+
+    fn push_range(&mut self, left: u32, right: u32) -> Result<(), Self::Error> {
+        if self.find_index > left && self.find_index < right {
+            self.folder.update_base(|b| b.track_next());
+            self.range.replace((left, right));
+        }
+        self.folder.push_range(left, right)
     }
 }
 
