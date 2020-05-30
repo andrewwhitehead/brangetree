@@ -1,22 +1,21 @@
 use std::env;
 use std::time::Instant;
 
-use naturalize::to_natural;
-
-use lazy_static::lazy_static;
-
-use brangetree::{process_zipped_bits, Error, RangeParser, RangeTreeFolder, TreeFold};
 use generic_array::typenum::U2;
+use lazy_static::lazy_static;
+use naturalize::to_natural;
 use neptune::poseidon::{HashMode, Poseidon, PoseidonConstants};
 use neptune::scalar_from_u64;
 use paired::bls12_381::{Bls12, Fr};
 
-pub struct PHashFold<'a> {
-    hasher: Poseidon<'a, Bls12>,
-}
+use brangetree::{process_zipped_bits, Error, RangeParser, RangeTreeFolder, TreeFold};
 
 lazy_static! {
     static ref CONSTANTS: PoseidonConstants<Bls12, U2> = PoseidonConstants::new();
+}
+
+pub struct PHashFold<'a> {
+    hasher: Poseidon<'a, Bls12>,
 }
 
 impl PHashFold<'_> {
