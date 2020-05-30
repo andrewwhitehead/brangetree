@@ -23,4 +23,4 @@ From the `rust` directory, resources can be built using `cargo build --release`.
 currently two executables: `brt-hash` hashes and prints statistics for a set of data files,
 while `brt-find` can be used to obtain the hash chain for a particular (non-revoked)
 credential index. These executables may be run using (for example):
-`cargo run --release --bin brt-hash -- ../data/22bits_*`.
+`cargo run --release --example brt-hash -- ../data/22bits_*`.
