@@ -2,8 +2,9 @@ use std::env;
 use std::time::Instant;
 
 use naturalize::to_natural;
+use sha2::Sha256;
 
-use brangetree::{hash_zipped, Error, Sha256};
+use brangetree::{hash_zipped, Error};
 
 fn natural_sort<I: IntoIterator<Item = String>>(paths: I) -> Vec<String> {
     let mut paths: Vec<(String, String)> = paths

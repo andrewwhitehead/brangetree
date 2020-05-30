@@ -1,7 +1,9 @@
 use std::env;
 use std::time::Instant;
 
-use brangetree::{find_merkle_path, Digest, Error, PathJoin, Sha256};
+use sha2::Sha256;
+
+use brangetree::{find_merkle_path, Digest, Error, PathJoin};
 
 fn main() -> Result<(), Error> {
     let args: Vec<String> = env::args().skip(1).take(2).collect();

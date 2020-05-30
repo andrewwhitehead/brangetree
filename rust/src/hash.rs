@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
-pub use sha2::digest::Digest;
-pub use sha2::Sha256;
+pub use digest::Digest;
 
 use super::tree::TreeFold;
 
@@ -36,6 +35,7 @@ impl<H: Digest, B: AsRef<[u8]>> TreeFold for HashFold<H, B> {
 mod test {
     use super::*;
     use crate::tree::TreeFolder;
+    use sha2::Sha256;
 
     #[test]
     fn test_hash() {

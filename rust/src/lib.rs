@@ -6,10 +6,11 @@ mod range;
 mod tree;
 
 pub use error::Error;
-pub use hash::{Digest, Sha256};
-use input::process_zipped_bits;
+pub use hash::Digest;
+pub use input::process_zipped_bits;
 pub use path::{Path, PathJoin};
-use range::{range_hasher, range_path_hasher, RangeParser};
+pub use range::{range_hasher, range_path_hasher, RangeParser, RangePathTracker, RangeTreeFolder};
+pub use tree::{TreeFold, TreeFolder};
 
 pub struct HashResult {
     pub leaf_count: usize,

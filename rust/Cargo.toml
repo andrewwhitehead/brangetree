@@ -13,16 +13,27 @@ crate-type = ["rlib"]
 
 [dependencies]
 byte-slice-cast = "0.3"
+digest = "0.8"
 flate2 = "1.0"
-hex = "0.4.0"
-naturalize = "0.1.2"
-sha2 = "0.8"
 thiserror = "1.0.9"
 
-[[bin]]
-name = "brt-hash"
-path = "src/bin/brt-hash.rs"
+[dev-dependencies]
+generic-array = "0.13"
+hex = "0.4.0"
+lazy_static = "1.4"
+naturalize = "0.1"
+neptune = "0.7"
+paired = "0.19"
+sha2 = "0.8"
 
-[[bin]]
+[[example]]
+name = "brt-hash"
+path = "src/examples/brt-hash.rs"
+
+[[example]]
+name = "brt-phash"
+path = "src/examples/brt-phash.rs"
+
+[[example]]
 name = "brt-find"
-path = "src/bin/brt-find.rs"
+path = "src/examples/brt-find.rs"
